@@ -150,11 +150,12 @@ app.Avatar = React.createClass({
 			errorCode: 0,
 			favorite: undefined,
 			favoriteUsers: {},
-			data: {}
+			data: {},
+			favorites: store.get("favorites") || {}
 		}
 	},
 	componentDidMount: function () {
-		this.fetchUserSubmit("abdulhannanali")
+		this.fetchUserSubmit("tj")
 	},
 	toggleFavorite: function () {
 		var favorite = !this.state.favorite
@@ -163,16 +164,21 @@ app.Avatar = React.createClass({
 			favorite: favorite
 		})
 
-		var favorites = store.get("favorites") || {}
+		var favorites = this.state.favorites
 
 		if (favorite) {
 			favorites[this.state.username] = this.state.data
-			store.set("favorites", favorites)
 		}
 		else {
 			delete favorites[this.state.username]
-			store.set("favorites", favorites) 
 		}
+
+		this.setState({
+			favorites: favorites
+		})
+
+		store.set("favorites", favorites)
+		console.log(favorites)
 	},
 	fetchUserSubmit: function (user) {
 		var self = this
@@ -207,7 +213,7 @@ app.Avatar = React.createClass({
 						reposCount: user.repos,
 						errorCode: 0,
 						data: user,
-						favorite: store.get("favorites")[user.username] ? true: false
+						favorite: self.state.favorites[user.username] ? true: false
 					})
 
 				}
@@ -227,13 +233,37 @@ app.Avatar = React.createClass({
 					<app.AvatarFavorite handleStarFavorite={this.toggleFavorite} favorite={this.state.favorite} />
 					<app.AvatarDetails details={this.state.data} />
 					<app.AvatarImage userId={this.state.userId} />
+					<app.FavoriteUsers favorites={this.state.favorites} />
 				</div>
 			)
 	}
 })
 
 app.FavoriteUsers = React.createClass({
+	handleUserClick: function (event) {
+
+	},
 	render: function () {
+		var users = Object.keys(this.props.favorites)
+		var self = this
+
+		var favoriteUsers = users.map(function (value, index, array) {
+			var userData = self.props.favorites[value]
+			var userId = parseInt(userData["id"].split("-")[1])
+			return (
+					<div>
+						<a href={"https://github.com/" + userData.username}><div onClick={self.handleUserClick} key={userId} className="favoriteUser">{userData.username}</div></a>
+						<p>Repos: {userData.repos}</p>
+					</div>
+				)
+		})
+
+		return (
+				<div className="favoriteUsers">
+					<h3>The favorite users</h3>
+					{favoriteUsers}
+				</div>
+			)
 	}
 })
 
