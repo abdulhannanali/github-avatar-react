@@ -49,6 +49,9 @@ app.AvatarImage = React.createClass({
 	}
 })
 
+
+// Component for Avatar Name
+// This component can be totally merged with AvatarDetials
 app.AvatarName = React.createClass({
 	render: function () {
 		return (
@@ -56,6 +59,32 @@ app.AvatarName = React.createClass({
 			)
 	}
 })
+
+
+app.AvatarFavorite = React.createClass({
+	handleClick: function () {
+		this.props.handleStarFavorite()
+	},
+	render: function () {
+		var favorite = this.props.favorite
+
+		if (typeof this.props.favorite == "boolean") {
+			var star;
+			if (favorite) {
+				star = (<i onClick={this.handleClick} className="material-icons" style={{color: "yellow"}}>star</i>)
+			}
+			else {
+				star = (<i onClick={this.handleClick} className="material-icons" style={{color: "yellow"}}>star_border</i>)
+			}
+
+			return star
+		}
+		else {
+			return false
+		}
+	} 
+})
+
 
 app.AvatarDetails = React.createClass({
 	render: function () {
@@ -78,6 +107,11 @@ app.AvatarDetails = React.createClass({
 })
 
 app.AvatarError = React.createClass({
+	getInitialState: function () {
+		return {
+			displayTime: 5 // time in seconds
+		}
+	},
 	render: function () {
 		var message = ""
 
@@ -105,6 +139,7 @@ app.AvatarError = React.createClass({
 	}
 })
 
+
 app.Avatar = React.createClass({
 	getInitialState: function () {
 		return {
@@ -113,11 +148,31 @@ app.Avatar = React.createClass({
 			username: "",
 			reposCount: 0,
 			errorCode: 0,
+			favorite: undefined,
+			favoriteUsers: {},
 			data: {}
 		}
 	},
 	componentDidMount: function () {
 		this.fetchUserSubmit("abdulhannanali")
+	},
+	toggleFavorite: function () {
+		var favorite = !this.state.favorite
+
+		this.setState({
+			favorite: favorite
+		})
+
+		var favorites = store.get("favorites") || {}
+
+		if (favorite) {
+			favorites[this.state.username] = this.state.data
+			store.set("favorites", favorites)
+		}
+		else {
+			delete favorites[this.state.username]
+			store.set("favorites", favorites) 
+		}
 	},
 	fetchUserSubmit: function (user) {
 		var self = this
@@ -125,7 +180,7 @@ app.Avatar = React.createClass({
 			return;
 		}
 
-		var apiEndpoint = "https://api.github.com/legacy	/user/search/*"
+		var apiEndpoint = "https://api.github.com/legacy/user/search/*"
 		fetch(apiEndpoint.replace("*", user))
 			.then(function (response, body) {
 				if (response.status == 500 || response.status == 404) {
@@ -151,8 +206,10 @@ app.Avatar = React.createClass({
 						userId: user.id,
 						reposCount: user.repos,
 						errorCode: 0,
-						data: user
+						data: user,
+						favorite: store.get("favorites")[user.username] ? true: false
 					})
+
 				}
 				else {
 					self.setState({
@@ -167,6 +224,7 @@ app.Avatar = React.createClass({
 					<app.AvatarForm onFormSubmit={this.fetchUserSubmit} />
 					<app.AvatarError errorCode={this.state.errorCode} />
 					<app.AvatarName name={this.state.name} />
+					<app.AvatarFavorite handleStarFavorite={this.toggleFavorite} favorite={this.state.favorite} />
 					<app.AvatarDetails details={this.state.data} />
 					<app.AvatarImage userId={this.state.userId} />
 				</div>
@@ -174,7 +232,10 @@ app.Avatar = React.createClass({
 	}
 })
 
-
+app.FavoriteUsers = React.createClass({
+	render: function () {
+	}
+})
 
 
 ReactDOM.render(<app.Avatar />,
